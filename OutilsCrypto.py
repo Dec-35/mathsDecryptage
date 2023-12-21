@@ -187,3 +187,23 @@ def dechiffreCesar(mot, k):
     for c in mot:
         res += decode((code(c) - k) % 26)
     return res
+
+
+def chiffreAffine(mot, a, b):
+    # a * mot + b
+
+    res = ""
+    for c in mot:
+        res += decode((a * code(c) + b) % 26)
+    return res
+
+
+def dechiffreAffine(mot, a, b):
+    # cas impossible
+    if invMod(a, 26) == -1:
+        return "Impossible"
+
+    res = ""
+    for c in mot:
+        res += decode((invMod(a, 26) * (code(c) - b)) % 26)
+    return res
