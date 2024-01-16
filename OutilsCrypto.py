@@ -207,3 +207,25 @@ def dechiffreAffine(mot, a, b):
     for c in mot:
         res += decode((invMod(a, 26) * (code(c) - b)) % 26)
     return res
+
+
+def invMat(mat):
+    a, b = mat[0][0], mat[0][1]
+    c, d = mat[1][0], mat[1][1]
+
+    det = a * d - b * c
+
+    # Vérifier si la matrice est inversible
+    if det == 0:
+        raise ValueError("La matrice n'est pas inversible")
+
+    # Calcul de l'inverse modulo 26
+    det_inv = pow(det, -1, 26)
+
+    # Calcul de la matrice inverse
+    inv_a = (d * det_inv) % 26
+    inv_b = (-b * det_inv) % 26
+    inv_c = (-c * det_inv) % 26
+    inv_d = (a * det_inv) % 26
+
+    return [[inv_a, inv_b], [inv_c, inv_d]]
