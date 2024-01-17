@@ -1,11 +1,16 @@
 import time
 import math
 import random
-
+from datetime import datetime
+import string
 
 #####################################################
 #                       Arithmétique                #
 #####################################################
+
+
+def toBinary(a):
+    return "".join(format(ord(x), "08b") for x in a)
 
 
 def divEuclid1(a, b):
@@ -229,3 +234,197 @@ def invMat(mat):
     inv_d = (a * det_inv) % 26
 
     return [[inv_a, inv_b], [inv_c, inv_d]]
+
+
+def chiffreVigenere(mot, cle):
+    motChiffre = ""
+    for i in range(len(mot)):
+        shift = code(
+            cle[i % len(cle)]
+        )  # Utilisation de la fonction code pour obtenir le décalage
+        motChiffre += chiffreCesar(mot[i], shift)
+    return motChiffre
+
+
+def dechiffreVigenere(motChiffre, cle):
+    motDechiffre = ""
+    for i in range(len(motChiffre)):
+        shift = code(
+            cle[i % len(cle)]
+        )  # Utilisation de la fonction code pour obtenir le décalage
+        motDechiffre += dechiffreCesar(motChiffre[i], shift)
+    return motDechiffre
+
+
+def cleVernam(n):
+    cle = ""
+    for i in range(n):
+        cle += chr(random.randint(0, 25) + 65)
+    return cle
+
+
+def chiffreVernam(mot):
+    cle = cleVernam(len(mot))
+    motChiffre = ""
+    for i in range(len(mot)):
+        shift = code(cle[i])
+        motChiffre += chiffreCesar(mot[i], shift)
+    return motChiffre, cle
+
+
+def dechiffreVernam(motChiffre, cle):
+    motDechiffre = ""
+    for i in range(len(motChiffre)):
+        shift = code(cle[i])
+        motDechiffre += dechiffreCesar(motChiffre[i], shift)
+    return motDechiffre
+
+
+def printM(M):
+    try:
+        n = len(M)
+        m = len(M[0])
+    except:
+        return print("")
+
+    res = ""
+    for i in range(n):
+        for j in range(m):
+            try:
+                res += str(M[i][j])
+            except:
+                return print("")
+            if j < m - 1:
+                res += "\t"
+        res += "\n"
+    print(res)
+
+
+# renvoie le résultat du produit de matrice
+# Matrice vide en cas d'erreur
+def prodMat(A, B):
+    try:
+        lA = len(A)
+        cA = len(A[0])
+        lB = len(B)
+        cB = len(B[0])
+    except:
+        return dict()
+    if cA != lB:
+        return dict()
+
+    res = dict()
+    for i in range(lA):
+        res[i] = dict()
+        for j in range(cB):
+            res[i][j] = 0
+            for k in range(cA):
+                res[i][j] += A[i][k] * B[k][j]
+    return res
+
+
+def cleHill():
+    # la cle est une matrice A tq det(A) doit être inversible modulo 26
+    # i.e. pgcd(ad-bc,26) = 1
+
+    # on choisit une matrice aléatoire
+    A = [[random.randint(0, 25) for i in range(2)] for j in range(2)]
+    # on calcule le déterminant
+    det = A[0][0] * A[1][1] - A[0][1] * A[1][0]
+    # on vérifie que le déterminant est inversible modulo 26
+    while pgcd(det, 26) != 1:
+        A = [[random.randint(0, 25) for i in range(2)] for j in range(2)]
+        det = A[0][0] * A[1][1] - A[0][1] * A[1][0]
+    return A
+
+
+def chiffreHill(txt, cle):
+    # on découpe le texte en blocs de 2 lettres
+    blocs = [txt[i : i + 2] for i in range(0, len(txt), 2)]
+
+    if len(blocs[-1]) == 1:
+        blocs[-1] += "x"
+
+    # on chiffre chaque bloc
+    blocs_chiffres = []
+    for bloc in blocs:
+        # on transforme le bloc en matrice
+        M = [[code(bloc[0])], [code(bloc[1])]]
+        # on chiffre le bloc
+        bloc_chiffre = prodMat(cle, M)
+        # on transforme la matrice en bloc
+        bloc_chiffre = chr(bloc_chiffre[0][0] % 26 + 65) + chr(
+            bloc_chiffre[1][0] % 26 + 65
+        )
+        # on ajoute le bloc chiffré à la liste des blocs chiffrés
+        blocs_chiffres.append(bloc_chiffre)
+
+    # on retourne le texte chiffré
+    return "".join(blocs_chiffres).lower()
+
+
+def dechiffreHill(txt, cle):
+    # on découpe le texte en blocs de 2 lettres
+    blocs = [txt[i : i + 2] for i in range(0, len(txt), 2)]
+
+    # on déchiffre chaque bloc
+    blocs_dechiffres = []
+    for bloc in blocs:
+        # on transforme le bloc en matrice
+        M = [[code(bloc[0])], [code(bloc[1])]]
+        # on calcule l'inverse de la clé
+        cle_inverse = invMat(cle)
+        # on déchiffre le bloc
+        bloc_dechiffre = prodMat(cle_inverse, M)
+        # on transforme la matrice en bloc
+        bloc_dechiffre = chr(bloc_dechiffre[0][0] % 26 + 65) + chr(
+            bloc_dechiffre[1][0] % 26 + 65
+        )
+        # on ajoute le bloc déchiffré à la liste des blocs déchiffrés
+        blocs_dechiffres.append(bloc_dechiffre)
+
+    # on retourne le texte déchiffré
+    return "".join(blocs_dechiffres).lower()
+
+
+def hachage(x):
+    # calculer h(x) -> h(x) = \sum_{i=0}^{l-1} x[i] \times 2^{l-i-1} \pmod{251}
+
+    # convertir x en binaire
+    bin = toBinary(x)
+    # calculer la somme
+    somme = 0
+    for i in range(len(bin)):
+        somme += int(bin[i]) * pow(2, len(bin) - i - 1)
+    # calculer le modulo
+    return somme % 251
+
+
+def attaque_dico_hash(h, dic):
+    dico = open(dic, mode="r")
+    n = 0  # pour compter le nombre de mots
+    t0 = datetime.now()  # l'heure à l'instant présent
+
+    for mot in dico:
+        n += 1
+        mot = mot.strip()
+
+        hash_mot = hash.sha256(mot.encode("utf-8")).hexdigest()
+        if hash_mot == h:
+            print("Le mot de passe est : ", mot)
+            break
+
+    print(
+        "{} mot(s) ont étés testés en {} seconde(s),".format(
+            n, (datetime.now() - t0).total_seconds()
+        )
+    )
+
+
+## enregistrement du hash du mot de passe salé
+
+
+def secure_password_generate(password):
+    salt = "".join(random.choice(string.ascii_letters) for i in range(32))
+    hashed_password = hash.sha256((password + salt).encode("utf-8")).hexdigest()
+    return str(hashed_password) + "_" + str(salt)
