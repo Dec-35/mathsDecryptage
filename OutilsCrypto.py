@@ -74,7 +74,6 @@ def dioph(a, b, c):
 
 def invMod(a, n):
     if pgcd(a, n) != 1:
-        print(a, " n'est pas inversible modulo ", n)
         return -1
     (u, v) = bezout(a, n)
     return u % n
