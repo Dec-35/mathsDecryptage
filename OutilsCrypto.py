@@ -132,6 +132,7 @@ def decompPrime(n):
 #####################################################
 #                       Crypto.                     #
 #####################################################
+# ------------TP1-----------------#
 def Filtre(txt):
     res = ""
     for c in txt.lower():
@@ -233,6 +234,9 @@ def invMat(mat):
     inv_d = (a * det_inv) % 26
 
     return [[inv_a, inv_b], [inv_c, inv_d]]
+
+
+# ------------TP2-----------------#
 
 
 def chiffreVigenere(mot, cle):
@@ -386,6 +390,9 @@ def dechiffreHill(txt, cle):
     return "".join(blocs_dechiffres).lower()
 
 
+# ------------TP3-----------------#
+
+
 def hachage(x):
     # calculer h(x) -> h(x) = \sum_{i=0}^{l-1} x[i] \times 2^{l-i-1} \pmod{251}
 
@@ -427,6 +434,9 @@ def secure_password_generate(password):
     salt = "".join(random.choice(string.ascii_letters) for i in range(32))
     hashed_password = hash.sha256((password + salt).encode("utf-8")).hexdigest()
     return str(hashed_password) + "_" + str(salt)
+
+
+# ------------TP4-----------------#
 
 
 def pertinence(phrase, arbre):
@@ -640,3 +650,159 @@ def rechercheTaillCle(txt):
     for i in range(1, 20):
         ic_list.append(ic(txt[i::i]))
     return ic_list.index(max(ic_list)) + 1
+
+
+# ---------------TP5-----------------#
+
+
+def calculer_cle_privee(nombre_secret, base, modulo):
+    return (base**nombre_secret) % modulo
+
+
+def echangeDiffieHellman(p, g):
+    alice_secret = int(input("Alice, entrez le nombre secret : "))
+    bob_secret = int(input("Bob, entrez le nombre secret : "))
+
+    A = calculer_cle_privee(alice_secret, g, p)
+    B = calculer_cle_privee(bob_secret, g, p)
+
+    cle_alice = calculer_cle_privee(alice_secret, B, p)
+    cle_bob = calculer_cle_privee(bob_secret, A, p)
+
+    print("Clé Alice : " + str(cle_alice))
+    print("Clé Bob : " + str(cle_bob))
+
+    if cle_alice == cle_bob:
+        print("Les clés sont égales")
+    else:
+        print("Les clés ne sont pas égales")
+
+
+def get_prime(size):
+    while True:
+        nb = random.getrandbits(size)
+        nb |= 1  # force le dernier bit à 1 pour être sûr d'avoir un nombre impair
+        if isPrime(nb):
+            return nb
+
+
+def chiffre_RSA(txt, size):
+    # Générer deux nombres premiers distincts
+    p = get_prime(size)
+    q = get_prime(size)
+
+    # Calculer le produit des deux nombres premiers
+    n = p * q
+
+    # Calculer la fonction d'Euler de n
+    phi_n = (p - 1) * (q - 1)
+
+    # Choisir un exposant de chiffrement e aléatoire
+    e = random.randint(2, phi_n - 1)
+    while not isPrime(e):
+        e = random.randint(2, phi_n - 1)
+
+    # Calculer l'exposant de déchiffrement d
+    d = invMod(e, phi_n)
+
+    # Chiffrer le texte en utilisant la clé publique (e, n)
+    txt_chiffre = [pow(ord(char), e, n) for char in txt]
+
+    return txt_chiffre, (e, n), (d, n)
+
+
+def dechiffre_RSA(txt_chiffre, d, n):
+    txt_dechiffre = "".join(chr(pow(char, d, n)) for char in txt_chiffre)
+    return txt_dechiffre
+
+
+def is_prime_MR(n):
+    # Vérification rapide de la primalité en utilisant les tests de Miller-Rabin
+    if n in (2, 3):
+        return True
+    if n == 1 or n % 2 == 0:
+        return False
+    d = n - 1
+    r = 0
+    while d % 2 == 0:
+        d //= 2
+        r += 1
+    for _ in range(10):
+        a = random.randrange(2, n - 1)
+        x = pow(a, d, n)
+        if x == 1 or x == n - 1:
+            continue
+        for _ in range(r - 1):
+            x = pow(x, 2, n)
+            if x == n - 1:
+                break
+        else:
+            return False
+    return True
+
+
+def get_prime_MR(size):
+    while True:
+        nb = random.getrandbits(size)
+        nb |= 1
+        if is_prime_MR(nb):
+            return nb
+
+
+def chiffre_RSA_MR(txt, size):
+    # Générer deux nombres premiers distincts
+    p = get_prime_MR(size)
+    q = get_prime_MR(size)
+
+    # Calculer le produit des deux nombres premiers
+    n = p * q
+
+    # Calculer la fonction d'Euler de n
+    phi_n = (p - 1) * (q - 1)
+
+    # Choisir un exposant de chiffrement e aléatoire
+    e = random.randint(2, phi_n - 1)
+    while not is_prime_MR(e):
+        e = random.randint(2, phi_n - 1)
+
+    # Calculer l'exposant de déchiffrement d
+    d = invMod(e, phi_n)
+
+    # Chiffrer le texte en utilisant la clé publique (e, n)
+    txt_chiffre = [pow(ord(char), e, n) for char in txt]
+
+    return txt_chiffre, (e, n), (d, n)
+
+
+def fast_exp(x, k, n):
+    r = 1
+    x = x % n
+
+    while k > 0:
+        if k % 2 == 1:
+            r = (r * x) % n
+        x = (x * x) % n
+        k //= 2
+    return r
+
+
+def chiffre_RSA_MR_FE(txt, size):
+    p = get_prime_MR(size)
+    q = get_prime_MR(size)
+
+    n = p * q
+    phi_n = (p - 1) * (q - 1)
+
+    e = random.randint(2, phi_n)
+    while not is_prime_MR(e):
+        e = random.randint(2, phi_n)
+    d = invMod(e, phi_n)
+
+    txt_chiffre = [fast_exp(ord(char), e, n) for char in txt]
+
+    return txt_chiffre, (e, n), (d, n)
+
+
+def dechiffre_RSA_FE(txt_chiffre, d, n):
+    txt_dechiffre = "".join(chr(fast_exp(char, d, n)) for char in txt_chiffre)
+    return txt_dechiffre
