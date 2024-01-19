@@ -427,3 +427,216 @@ def secure_password_generate(password):
     salt = "".join(random.choice(string.ascii_letters) for i in range(32))
     hashed_password = hash.sha256((password + salt).encode("utf-8")).hexdigest()
     return str(hashed_password) + "_" + str(salt)
+
+
+def pertinence(phrase, arbre):
+    pert = 0
+    n = len(phrase)
+    for i in range(n):
+        test = True
+        positionDico = arbre
+        for j in range(i, n):
+            cara = phrase[j]
+            try:
+                x = positionDico[cara]
+            except:
+                break
+            if x["FINMOT"]:
+                pert += 1
+            positionDico = x
+    return pert
+
+
+def attaqueCesar(message):
+    t0 = datetime.now()  # l'heure à l'instant présent
+    n = 0  # pour compter le nombre de clés testées
+    meilleur = 0  # meilleure pertinence
+    meilleurTexte = ""
+    meilleurCle = 0
+
+    for cle in range(26):
+        n += 1
+        texte = dechiffreCesar(message, cle)
+
+        if pertinence(texte, DICO_FR) > meilleur:
+            meilleur = pertinence(texte, DICO_FR)
+            meilleurTexte = texte
+            meilleurCle = cle
+
+    print(
+        "{} clé(s) ont étés testées en {} seconde(s),".format(
+            n, (datetime.now() - t0).total_seconds()
+        )
+    )
+    return "Le meilleur message est : {} avec la clé {} et une pertinence de {}".format(
+        meilleurTexte, meilleurCle, meilleur
+    )
+
+
+def attaqueAffine(message):
+    t0 = datetime.now()  # l'heure à l'instant présent
+    n = 0  # pour compter le nombre de clés testées
+    meilleur = 0  # meilleure pertinence
+    meilleurTexte = ""
+    meilleurCle = 0
+
+    for a in range(26):
+        for b in range(26):
+            n += 1
+            texte = dechiffreAffine(message, a, b)
+
+            if pertinence(texte, DICO_FR) > meilleur:
+                meilleur = pertinence(texte, DICO_FR)
+                meilleurTexte = texte
+                meilleurCle = (a, b)
+
+    print(
+        "{} clé(s) ont étés testées en {} seconde(s),".format(
+            n, (datetime.now() - t0).total_seconds()
+        )
+    )
+
+    return "Le meilleur message est : {} avec la clé {} et une pertinence de {}".format(
+        meilleurTexte, meilleurCle, meilleur
+    )
+
+
+def attaqueVigenere(message):
+    t0 = datetime.now()  # l'heure à l'instant présent
+    n = 0
+
+    meilleur = 0  # meilleure pertinence
+    meilleurTexte = ""
+    meilleurCle = ""
+
+    for k in range(1, 10):
+        for cle in itertools.product(alphabet, repeat=k):
+            n += 1
+            texte = dechiffreVigenere(message, cle)
+
+            if pertinence(texte, DICO_FR) > meilleur:
+                meilleur = pertinence(texte, DICO_FR)
+                meilleurTexte = texte
+                meilleurCle = cle
+
+    print(
+        "{} mot(s) ont étés testés en {} seconde(s),".format(
+            n, (datetime.now() - t0).total_seconds()
+        )
+    )
+
+    return "{} avec la clé {} et une pertinence de {}".format(
+        meilleurTexte, meilleurCle, meilleur
+    )
+
+
+def attaqueVigenere(message, maxSize):
+    t0 = datetime.now()  # l'heure à l'instant présent
+    n = 0
+
+    meilleur = 0  # meilleure pertinence
+    meilleurTexte = ""
+    meilleurCle = ""
+
+    for k in range(1, 10):
+        for cle in itertools.product(alphabet, repeat=k):
+            n += 1
+            texte = dechiffreVigenere(message, cle)
+            if n >= maxSize:
+                print(
+                    "{} mot(s) ont étés testés en {} seconde(s),".format(
+                        n, (datetime.now() - t0).total_seconds()
+                    )
+                )
+
+                return "{} avec la clé {} et une pertinence de {}".format(
+                    meilleurTexte, meilleurCle, meilleur
+                )
+
+            if pertinence(texte, DICO_FR) > meilleur:
+                meilleur = pertinence(texte, DICO_FR)
+                meilleurTexte = texte
+                meilleurCle = cle
+
+    print(
+        "{} mot(s) ont étés testés en {} seconde(s),".format(
+            n, (datetime.now() - t0).total_seconds()
+        )
+    )
+
+    return "{} avec la clé {} et une pertinence de {}".format(
+        meilleurTexte, meilleurCle, meilleur
+    )
+
+
+def ic(texte):
+    n = len(texte)
+    alphabet = list(string.ascii_lowercase)
+    somme = 0
+    for lettre in alphabet:
+        somme += texte.count(lettre) * (texte.count(lettre) - 1)
+    return somme / (n * (n - 1))
+
+
+def freq(txt):
+    alphabet = "abcdefghijklmnopqrstuvwxyz"
+    freq_table = [0] * 26  # Initialiser le tableau des fréquences
+
+    for char in txt:
+        if char in alphabet:
+            index = alphabet.index(char)
+            freq_table[index] += 1
+
+    return freq_table
+
+
+def maxFreq(txt):
+    freq_table = freq(txt)
+    max_freq = max(freq_table)
+    index = freq_table.index(max_freq)
+    return index
+
+
+def attaqueFreqVigenere(txt, lg):
+    t0 = datetime.now()
+    n = 0
+    # n is the number of words tested
+
+    # On calcule les fréquences de chaque sous-texte
+    freq_table = []
+    for i in range(lg):
+        freq_table.append(freq(txt[i::lg]))
+
+    # On calcule les indices de coincidence de chaque sous-texte
+    ic_table = []
+    for i in range(lg):
+        ic_table.append(ic(txt[i::lg]))
+
+    # On calcule les décalages de chaque sous-texte
+
+    decalage_table = []
+    for i in range(lg):
+        decalage_table.append(maxFreq(txt[i::lg]))
+
+    # On calcule la clé
+    cle = ""
+    for i in range(lg):
+        cle += chr(97 + (decalage_table[i] - 4) % 26)
+
+    # On déchiffre le texte
+    texte = dechiffreVigenere(txt, cle)
+
+    print(
+        "L'algorythme a pris {} seconde(s),".format(
+            lg, (datetime.now() - t0).total_seconds()
+        )
+    )
+    return "{} avec la clé partielle {}".format(texte, cle)
+
+
+def rechercheTaillCle(txt):
+    # use ic to find the best key length
+    ic_list = []
+    for i in range(1, 20):
+        ic_list.append(ic(txt[i::i]))
+    return ic_list.index(max(ic_list)) + 1
